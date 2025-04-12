@@ -1,13 +1,15 @@
 
 import { Link } from "react-router-dom";
-import { Menu, X } from "lucide-react";
+import { Menu, X, LogIn, LogOut, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const { user, logout } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -25,6 +27,11 @@ const Navbar = () => {
     { name: "Mind Games", path: "/games" },
     { name: "Daily Log", path: "/log" },
   ];
+
+  const handleLogout = () => {
+    logout();
+    setIsOpen(false);
+  };
 
   return (
     <nav
@@ -56,6 +63,37 @@ const Navbar = () => {
           ))}
         </div>
 
+        {/* Auth Buttons (Desktop) */}
+        <div className="hidden md:flex items-center gap-2">
+          {user ? (
+            <div className="flex items-center gap-4">
+              <div className="text-sm font-medium">
+                <span className="text-muted-foreground mr-2">Hello,</span>
+                {user.name}
+              </div>
+              <Button variant="outline" size="sm" onClick={logout}>
+                <LogOut className="mr-2 h-4 w-4" />
+                Logout
+              </Button>
+            </div>
+          ) : (
+            <>
+              <Button variant="ghost" size="sm" asChild>
+                <Link to="/login">
+                  <LogIn className="mr-2 h-4 w-4" />
+                  Login
+                </Link>
+              </Button>
+              <Button size="sm" asChild>
+                <Link to="/signup">
+                  <User className="mr-2 h-4 w-4" />
+                  Sign up
+                </Link>
+              </Button>
+            </>
+          )}
+        </div>
+
         {/* Mobile Menu Button */}
         <Button
           variant="ghost"
@@ -81,6 +119,43 @@ const Navbar = () => {
                 {link.name}
               </Link>
             ))}
+            <div className="border-t pt-2 mt-2">
+              {user ? (
+                <>
+                  <div className="px-4 py-2 text-sm font-medium">
+                    <span className="text-muted-foreground">Signed in as </span>
+                    {user.email}
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    className="w-full mt-2 justify-start"
+                    onClick={handleLogout}
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Logout
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-start mb-2"
+                    asChild
+                  >
+                    <Link to="/login" onClick={() => setIsOpen(false)}>
+                      <LogIn className="mr-2 h-4 w-4" />
+                      Login
+                    </Link>
+                  </Button>
+                  <Button className="w-full justify-start" asChild>
+                    <Link to="/signup" onClick={() => setIsOpen(false)}>
+                      <User className="mr-2 h-4 w-4" />
+                      Sign up
+                    </Link>
+                  </Button>
+                </>
+              )}
+            </div>
           </div>
         </div>
       )}
