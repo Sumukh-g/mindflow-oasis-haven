@@ -6,8 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { User, Bot, SendHorizonal } from "lucide-react";
+import { User, Bot, SendHorizonal, KeyRound } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import { geminiService, GeminiMessage } from "@/services/GeminiService";
+import ApiKeyModal from "@/components/ApiKeyModal";
 
 interface Message {
   id: string;
@@ -27,6 +29,7 @@ const ChatPage = () => {
   ]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
@@ -35,6 +38,17 @@ const ChatPage = () => {
       scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
     }
   }, [messages]);
+
+  useEffect(() => {
+    // Check if API key is available
+    if (!geminiService.getApiKey()) {
+      toast({
+        title: "API Connection Required",
+        description: "To use the AI assistant, please connect your Gemini API key.",
+        variant: "default",
+      });
+    }
+  }, [toast]);
 
   const handleSendMessage = async () => {
     if (!input.trim()) return;
@@ -50,34 +64,60 @@ const ChatPage = () => {
     setInput("");
     setIsLoading(true);
 
-    // Simulate AI response (would be connected to Gemini API)
-    setTimeout(() => {
-      const responses = [
-        "I understand how you're feeling. What would help you feel better right now?",
-        "That's interesting. Could you tell me more about that?",
-        "I'm here to support you. Have you tried any relaxation techniques lately?",
-        "It sounds like you've been going through a lot. Remember to be kind to yourself.",
-        "Would you like to try a quick breathing exercise to help with that?",
-      ];
+    try {
+      // Check if API key is set
+      if (!geminiService.getApiKey()) {
+        setIsApiKeyModalOpen(true);
+        setIsLoading(false);
+        return;
+      }
+
+      // Convert messages to the format expected by the Gemini service
+      const conversationHistory: GeminiMessage[] = messages
+        .slice(-10) // Limit context to last 10 messages for token reasons
+        .map((msg) => ({
+          role: msg.sender,
+          content: msg.content,
+        }));
+
+      // Add the new user message
+      conversationHistory.push({
+        role: "user",
+        content: userMessage.content,
+      });
+
+      // Send to Gemini API
+      const response = await geminiService.sendMessage(conversationHistory);
 
       const aiMessage: Message = {
         id: Date.now().toString(),
-        content: responses[Math.floor(Math.random() * responses.length)],
+        content: response,
         sender: "assistant",
         timestamp: new Date(),
       };
 
       setMessages((prev) => [...prev, aiMessage]);
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to get AI response",
+      });
+      
+      // If API key error, prompt to enter key
+      if (error instanceof Error && error.message.includes("API key")) {
+        setIsApiKeyModalOpen(true);
+      }
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   };
 
-  const connectToGemini = () => {
-    toast({
-      title: "API Connection Required",
-      description: "To use the Gemini AI features, you'll need to configure your API key.",
-      variant: "default",
-    });
+  const handleApiKeySuccess = () => {
+    // Re-send the last message after API key is added
+    if (messages.length > 0 && messages[messages.length - 1].sender === "user") {
+      handleSendMessage();
+    }
   };
 
   return (
@@ -88,8 +128,14 @@ const ChatPage = () => {
           <p className="text-muted-foreground">
             I'm here to help with your mental wellness journey. What's on your mind?
           </p>
-          <Button onClick={connectToGemini} variant="outline" size="sm">
-            Connect Gemini API
+          <Button 
+            onClick={() => setIsApiKeyModalOpen(true)} 
+            variant="outline" 
+            size="sm"
+            className="gap-2"
+          >
+            <KeyRound className="h-4 w-4" />
+            {geminiService.getApiKey() ? "Change API Key" : "Connect Gemini API"}
           </Button>
         </div>
 
@@ -185,6 +231,12 @@ const ChatPage = () => {
           </CardContent>
         </Card>
       </div>
+
+      <ApiKeyModal 
+        open={isApiKeyModalOpen} 
+        onOpenChange={setIsApiKeyModalOpen} 
+        onSuccess={handleApiKeySuccess}
+      />
     </PageLayout>
   );
 };
