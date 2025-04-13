@@ -43,13 +43,11 @@ export class GeminiService {
     return this.apiKey;
   }
   
-  // Add a method to set the API key
   setApiKey(key: string): void {
     this.apiKey = key;
     console.log("API key has been set");
   }
   
-  // Add a method to validate the API key
   async validateApiKey(key: string): Promise<boolean> {
     try {
       // Create a simple request to test if the API key is valid
