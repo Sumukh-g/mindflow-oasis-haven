@@ -42,6 +42,50 @@ export class GeminiService {
   getApiKey(): string {
     return this.apiKey;
   }
+  
+  // Add a method to set the API key
+  setApiKey(key: string): void {
+    this.apiKey = key;
+    console.log("API key has been set");
+  }
+  
+  // Add a method to validate the API key
+  async validateApiKey(key: string): Promise<boolean> {
+    try {
+      // Create a simple request to test if the API key is valid
+      const testRequest: GeminiRequest = {
+        contents: [
+          {
+            role: "user",
+            parts: [{ text: "Hello" }],
+          },
+        ],
+        generationConfig: {
+          maxOutputTokens: 10, // Keep it minimal for testing
+        },
+      };
+
+      const response = await fetch(`${this.apiUrl}?key=${key}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(testRequest),
+      });
+
+      // If the response is not ok, the API key is invalid
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error("API key validation failed:", errorData);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error("API key validation error:", error);
+      return false;
+    }
+  }
 
   async sendMessage(messages: GeminiMessage[]): Promise<string> {
     // Transform messages into the format expected by Gemini API
