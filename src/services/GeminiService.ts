@@ -31,32 +31,19 @@ export interface GeminiResponse {
 }
 
 export class GeminiService {
-  private apiKey: string | null = null;
-  private apiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent";
+  private apiKey: string = "YOUR_GEMINI_API_KEY"; // Replace with your actual API key
+  private apiUrl = "https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent";
 
   constructor() {
-    // Try to load API key from localStorage
-    this.apiKey = localStorage.getItem("gemini-api-key");
+    // No need to load from localStorage anymore
+    console.log("Gemini service initialized");
   }
 
-  setApiKey(key: string): void {
-    this.apiKey = key;
-    localStorage.setItem("gemini-api-key", key);
-    toast({
-      title: "API Key Saved",
-      description: "Your Gemini API key has been saved successfully.",
-    });
-  }
-
-  getApiKey(): string | null {
+  getApiKey(): string {
     return this.apiKey;
   }
 
   async sendMessage(messages: GeminiMessage[]): Promise<string> {
-    if (!this.apiKey) {
-      throw new Error("API key not set");
-    }
-
     // Transform messages into the format expected by Gemini API
     const contents = messages.map((message) => ({
       role: message.role,
@@ -97,23 +84,6 @@ export class GeminiService {
     } catch (error) {
       console.error("Gemini API error:", error);
       throw error;
-    }
-  }
-
-  // Check if API key is valid by sending a test message
-  async validateApiKey(key: string): Promise<boolean> {
-    const tempKey = this.apiKey;
-    this.apiKey = key;
-    
-    try {
-      const testMessage = "Hello, can you respond with just the word 'Connected' to confirm the API connection?";
-      const response = await this.sendMessage([{ role: "user", content: testMessage }]);
-      return response.includes("Connected");
-    } catch (error) {
-      console.error("API key validation failed:", error);
-      return false;
-    } finally {
-      this.apiKey = tempKey;
     }
   }
 }
