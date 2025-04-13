@@ -31,7 +31,7 @@ export interface GeminiResponse {
 }
 
 export class GeminiService {
-  private apiKey: string = "YOUR_GEMINI_API_KEY"; // Replace with your actual API key
+  private apiKey: string = "AIzaSyCkkXRraFFs_DpyR7OSvr48hdamQBxImR0"; // Replace with your actual API key
   private apiUrl = "https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent";
 
   constructor() {
